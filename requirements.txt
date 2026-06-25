@@ -6,3 +6,6 @@ uvicorn
 python-dotenv
 rich
 httpx
+motor
+asyncpg
+pydantic

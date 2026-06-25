@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Panel Admin — Dr. Alejandro Martínez</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #0d1117;
+      --surface:  #161b22;
+      --border:   #30363d;
+      --accent:   #2563eb;
+      --accent2:  #1d4ed8;
+      --green:    #22c55e;
+      --red:      #ef4444;
+      --yellow:   #f59e0b;
+      --text:     #e6edf3;
+      --muted:    #8b949e;
+      --user-bg:  #1e293b;
+      --bot-bg:   #1a2332;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: grid;
+      grid-template-columns: 300px 1fr;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .sidebar-header {
+      padding: 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .sidebar-header h1 {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+
+    .sidebar-header p {
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: rgba(37,99,235,0.15);
+      color: #60a5fa;
+      border: 1px solid rgba(37,99,235,0.3);
+      border-radius: 20px;
+      padding: 3px 10px;
+      font-size: 11px;
+      font-weight: 500;
+      margin-top: 8px;
+    }
+
+    .sessions-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px;
+    }
+
+    .sessions-list::-webkit-scrollbar { width: 4px; }
+    .sessions-list::-webkit-scrollbar-track { background: transparent; }
+    .sessions-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+    .session-item {
+      padding: 12px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.15s;
+      margin-bottom: 4px;
+      border: 1px solid transparent;
+    }
+
+    .session-item:hover { background: rgba(255,255,255,0.05); }
+    .session-item.active { background: rgba(37,99,235,0.15); border-color: rgba(37,99,235,0.3); }
+
+    .session-phone {
+      font-size: 13px;
+      font-weight: 500;
+      font-family: monospace;
+      margin-bottom: 3px;
+    }
+
+    .session-meta {
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    /* ── Main ── */
+    .main {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .main-header {
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--surface);
+    }
+
+    .main-header h2 {
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    .main-header p {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .empty-state {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: var(--muted);
+      gap: 12px;
+    }
+
+    .empty-state svg { opacity: 0.3; }
+    .empty-state p { font-size: 14px; }
+
+    /* ── Chat ── */
+    .chat-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .chat-area::-webkit-scrollbar { width: 4px; }
+    .chat-area::-webkit-scrollbar-track { background: transparent; }
+    .chat-area::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+    .msg-row {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .msg-row.user { flex-direction: row-reverse; }
+
+    .msg-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .msg-row.user .msg-avatar { background: rgba(37,99,235,0.2); color: #60a5fa; }
+    .msg-row.bot  .msg-avatar { background: rgba(34,197,94,0.15); color: #4ade80; }
+
+    .msg-bubble {
+      max-width: 75%;
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-size: 13.5px;
+      line-height: 1.55;
+      position: relative;
+    }
+
+    .msg-row.user .msg-bubble {
+      background: var(--user-bg);
+      border: 1px solid var(--border);
+      border-top-right-radius: 4px;
+    }
+
+    .msg-row.bot .msg-bubble {
+      background: var(--bot-bg);
+      border: 1px solid var(--border);
+      border-top-left-radius: 4px;
+    }
+
+    .msg-time {
+      font-size: 10px;
+      color: var(--muted);
+      margin-top: 4px;
+      text-align: right;
+    }
+
+    .flag-btn {
+      position: absolute;
+      top: 6px;
+      right: -36px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--muted);
+      font-size: 16px;
+      opacity: 0;
+      transition: opacity 0.15s, color 0.15s;
+      padding: 4px;
+      border-radius: 6px;
+    }
+
+    .msg-row.bot .msg-bubble:hover .flag-btn { opacity: 1; }
+    .flag-btn:hover { color: var(--red) !important; background: rgba(239,68,68,0.1); }
+
+    /* ── Modal de feedback ── */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(4px);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-overlay.open { display: flex; }
+
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px;
+      width: 560px;
+      max-width: 95vw;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    }
+
+    .modal h3 {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+
+    .modal p.sub {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 20px;
+    }
+
+    .modal label {
+      display: block;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--muted);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .modal textarea, .modal input {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      padding: 10px 12px;
+      resize: vertical;
+      outline: none;
+      transition: border-color 0.15s;
+      margin-bottom: 16px;
+    }
+
+    .modal textarea:focus, .modal input:focus { border-color: var(--accent); }
+    .modal textarea { min-height: 90px; }
+
+    .bad-response-preview {
+      background: rgba(239,68,68,0.08);
+      border: 1px solid rgba(239,68,68,0.25);
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 12.5px;
+      color: #fca5a5;
+      margin-bottom: 16px;
+      line-height: 1.5;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      margin-top: 4px;
+    }
+
+    .btn {
+      padding: 9px 20px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      font-family: 'Inter', sans-serif;
+      transition: all 0.15s;
+    }
+
+    .btn-cancel { background: var(--bg); color: var(--muted); border: 1px solid var(--border); }
+    .btn-cancel:hover { color: var(--text); border-color: var(--text); }
+    .btn-save { background: var(--accent); color: #fff; }
+    .btn-save:hover { background: var(--accent2); }
+    .btn-save:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--green);
+      color: #fff;
+      padding: 12px 20px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 500;
+      box-shadow: 0 4px 20px rgba(34,197,94,0.3);
+      transform: translateY(80px);
+      opacity: 0;
+      transition: all 0.3s ease;
+      z-index: 200;
+    }
+
+    .toast.show { transform: translateY(0); opacity: 1; }
+
+    /* ── Loading ── */
+    .spinner {
+      width: 18px; height: 18px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      display: inline-block;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<aside class="sidebar">
+  <div class="sidebar-header">
+    <h1>🩺 Panel Admin</h1>
+    <p>Dr. Alejandro Martínez</p>
+    <div class="badge">🤖 Mateo · Entrenamiento</div>
+  </div>
+  <div class="sessions-list" id="sessionsList">
+    <div style="padding:20px;text-align:center;color:var(--muted);font-size:12px;">
+      Cargando conversaciones...
+    </div>
+  </div>
+</aside>
+
+<!-- Main -->
+<main class="main">
+  <div class="main-header">
+    <div>
+      <h2 id="headerTitle">Selecciona una conversación</h2>
+      <p id="headerSub">Marca las respuestas incorrectas del bot para que aprenda</p>
+    </div>
+  </div>
+
+  <div class="chat-area" id="chatArea">
+    <div class="empty-state">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+      </svg>
+      <p>Selecciona una conversación del panel izquierdo</p>
+    </div>
+  </div>
+</main>
+
+<!-- Modal de feedback -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <h3>❌ Marcar respuesta incorrecta</h3>
+    <p class="sub">El bot aprenderá a NO responder así y usará tu corrección.</p>
+
+    <label>Respuesta incorrecta del bot:</label>
+    <div class="bad-response-preview" id="badResponsePreview"></div>
+
+    <label>¿Cómo debió responder? *</label>
+    <textarea id="correctionText" placeholder="Escribe aquí la respuesta correcta que el bot debió dar..."></textarea>
+
+    <div class="modal-actions">
+      <button class="btn btn-cancel" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-save" id="saveBtn" onclick="saveFeedback()">Guardar corrección</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+  let currentSession = null;
+  let currentBadResponse = null;
+  let currentContext = '';
+
+  // ── Cargar sesiones ──────────────────────────────────────────────
+  async function loadSessions() {
+    try {
+      const res  = await fetch('/admin/sesiones');
+      const data = await res.json();
+      const list = document.getElementById('sessionsList');
+
+      if (!data.length) {
+        list.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);font-size:12px;">Sin conversaciones aún</div>';
+        return;
+      }
+
+      list.innerHTML = data.map(s => `
+        <div class="session-item" onclick="loadSession('${s.session_id}')" id="s-${s.session_id}">
+          <div class="session-phone">📱 ${s.session_id}</div>
+          <div class="session-meta">${s.total_mensajes} mensajes · ${formatTime(s.ultima_actividad)}</div>
+        </div>
+      `).join('');
+    } catch(e) {
+      console.error(e);
+    }
+  }
+
+  // ── Cargar mensajes de una sesión ────────────────────────────────
+  async function loadSession(sessionId) {
+    currentSession = sessionId;
+
+    document.querySelectorAll('.session-item').forEach(el => el.classList.remove('active'));
+    const el = document.getElementById(`s-${sessionId}`);
+    if (el) el.classList.add('active');
+
+    document.getElementById('headerTitle').textContent = `📱 ${sessionId}`;
+    document.getElementById('headerSub').textContent   = 'Haz clic en 🚩 en cualquier respuesta del bot para corregirla';
+
+    const chatArea = document.getElementById('chatArea');
+    chatArea.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)"><div class="spinner"></div></div>';
+
+    try {
+      const res  = await fetch(`/admin/sesion/${encodeURIComponent(sessionId)}`);
+      const msgs = await res.json();
+
+      chatArea.innerHTML = msgs.map((m, i) => {
+        const isBot  = m.rol === 'assistant';
+        const isUser = m.rol === 'user';
+        return `
+          <div class="msg-row ${isUser ? 'user' : 'bot'}">
+            <div class="msg-avatar">${isUser ? '👤' : '🤖'}</div>
+            <div>
+              <div class="msg-bubble">
+                ${escapeHtml(m.mensaje)}
+                ${isBot ? `<button class="flag-btn" title="Marcar como incorrecto" onclick="openModal(${JSON.stringify(m.mensaje)}, ${JSON.stringify(msgs.slice(Math.max(0,i-3), i+1).map(x=>x.rol+': '+x.mensaje).join('\n'))})">🚩</button>` : ''}
+              </div>
+              <div class="msg-time">${formatTime(m.timestamp)}</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      chatArea.scrollTop = chatArea.scrollHeight;
+    } catch(e) {
+      chatArea.innerHTML = '<div class="empty-state"><p>Error cargando mensajes</p></div>';
+    }
+  }
+
+  // ── Modal ────────────────────────────────────────────────────────
+  function openModal(badResponse, context) {
+    currentBadResponse = badResponse;
+    currentContext     = context;
+    document.getElementById('badResponsePreview').textContent = badResponse;
+    document.getElementById('correctionText').value = '';
+    document.getElementById('modalOverlay').classList.add('open');
+    setTimeout(() => document.getElementById('correctionText').focus(), 100);
+  }
+
+  function closeModal() {
+    document.getElementById('modalOverlay').classList.remove('open');
+  }
+
+  document.getElementById('modalOverlay').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) closeModal();
+  });
+
+  // ── Guardar feedback ─────────────────────────────────────────────
+  async function saveFeedback() {
+    const correccion = document.getElementById('correctionText').value.trim();
+    if (!correccion) {
+      document.getElementById('correctionText').focus();
+      return;
+    }
+
+    const btn = document.getElementById('saveBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>';
+
+    try {
+      const res  = await fetch('/admin/feedback', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          session_id:     currentSession,
+          respuesta_mala: currentBadResponse,
+          contexto:       currentContext,
+          correccion:     correccion,
+        }),
+      });
+      const data = await res.json();
+
+      closeModal();
+      showToast('✅ Corrección guardada. El bot aprenderá en el próximo re-índice.');
+    } catch(e) {
+      showToast('❌ Error al guardar. Intenta de nuevo.');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Guardar corrección';
+    }
+  }
+
+  // ── Utils ────────────────────────────────────────────────────────
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 4000);
+  }
+
+  function formatTime(ts) {
+    if (!ts) return '';
+    const d = new Date(ts);
+    return d.toLocaleString('es-MX', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' });
+  }
+
+  function escapeHtml(str) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+  }
+
+  // ── Init ─────────────────────────────────────────────────────────
+  loadSessions();
+  setInterval(loadSessions, 30000); // Refresca cada 30s
+</script>
+</body>
+</html>
