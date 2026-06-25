@@ -1,4 +1,4 @@
-import json
+﻿import json
 import os
 import re
 import sys
@@ -338,11 +338,11 @@ async def lifespan(app: FastAPI):
 
     cliente_ant = anthropic.Anthropic(api_key=api_key)
 
-    console.print("[bold green]Asistente del Dr. Martinez listo en http://localhost:8001[/bold green]")
+    console.print("[bold green]Asistente del Dr. Alejandro Martínez listo en http://localhost:8001[/bold green]")
     yield
 
 
-app = FastAPI(title="Asistente del Dr. Martínez — Cirugía General", lifespan=lifespan)
+app = FastAPI(title="Asistente del Dr. Alejandro Martínez — Cirugía General", lifespan=lifespan)
 
 
 class ChatRequest(BaseModel):
@@ -465,7 +465,7 @@ async def chat(req: ChatRequest):
     fecha_maxima = hoy + timedelta(days=90)
 
     system_prompt = (
-        "Eres Mateo, parte del equipo del consultorio del Dr. Martínez (Cirugía General).\n"
+        "Eres Mateo, parte del equipo del consultorio del Dr. Alejandro Martínez (Cirugía General).\n"
         "Hablas en español, con un tono tranquilo, cálido, cercano y empático.\n"
         "Nunca dices que eres una IA ni un asistente virtual. Eres Mateo, del equipo.\n\n"
 
@@ -474,7 +474,7 @@ async def chat(req: ChatRequest):
         "PROHIBIDO repetir frases como 'Soy Mateo', 'Me llamo Mateo', 'Soy del equipo', etc.\n"
         "Si el paciente dice 'Hola' o cualquier saludo, responde con calidez pero SIN decir tu nombre.\n"
         "Ejemplo CORRECTO si dicen 'Hola': '¡Qué gusto! ¿En qué te puedo ayudar?'\n"
-        "Ejemplo INCORRECTO: '¡Hola! Soy Mateo, del equipo del Dr. Martínez...'\n\n"
+        "Ejemplo INCORRECTO: '¡Hola! Soy Mateo, del equipo del Dr. Alejandro Martínez...'\n\n"
 
         "═══ PERFIL DEL PACIENTE ═══\n"
         "Los pacientes de este consultorio tienden a ser ansiosos o hipocondríacos: se preocupan mucho por sus síntomas.\n"
@@ -538,7 +538,7 @@ async def chat(req: ChatRequest):
         "1. NUNCA proporciones diagnósticos médicos, interpretaciones de estudios ni consejos de tratamiento.\n"
         "2. NUNCA recomiendes ni ajustes medicamentos.\n"
         "3. Si el paciente describe síntomas, tranquilízalo primero (PASO 1 y 2) antes de hablar de citas.\n"
-        "4. CONSULTA GENERAL: El Dr. Martínez atiende CUALQUIER motivo de consulta, no solo cirugía. "
+        "4. CONSULTA GENERAL: El Dr. Alejandro Martínez atiende CUALQUIER motivo de consulta, no solo cirugía. "
         "NUNCA digas que el paciente debería ir con otro especialista ni que el doctor no maneja ese padecimiento. "
         "Para cualquier molestia —pie, cabeza, espalda, lo que sea— sigue el flujo normal: calmar → tratamiento → cita.\n"
         "5. URGENCIAS MÉDICAS: Si el paciente describe dolor severo, sangrado abundante, fiebre alta, "

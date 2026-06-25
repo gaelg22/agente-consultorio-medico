@@ -13,3 +13,9 @@ services:
         sync: false
       - key: KAPSO_WEBHOOK_SECRET
         sync: false
+      - key: GITHUB_TOKEN
+        sync: false
+      - key: GITHUB_VAULT_OWNER
+        value: gaelg22
+      - key: GITHUB_VAULT_REPO
+        value: doctor-vault

@@ -12,6 +12,7 @@ CONFIGURACIÓN RÁPIDA:
   4. Ejecuta: python agente_kapso.py
 """
 
+import base64
 import hashlib
 import hmac
 import json
@@ -39,7 +40,7 @@ console = Console()
 #  ═══ CONFIGURACIÓN — Cambia esto por tu negocio ═══
 # ══════════════════════════════════════════════════════════════════
 
-NEGOCIO_NOMBRE      = "Consultorio Dr. Martínez"
+NEGOCIO_NOMBRE      = "Consultorio Dr. Alejandro Martínez"
 NEGOCIO_TIPO        = "Cirugía General"
 AGENTE_NOMBRE       = "Mateo"          # Nombre del agente de atención
 AGENTE_ROL          = "parte del equipo del consultorio"
@@ -81,6 +82,11 @@ KAPSO_PHONE_NUMBER_ID  = os.getenv("KAPSO_PHONE_NUMBER_ID", "")
 KAPSO_WEBHOOK_SECRET   = os.getenv("KAPSO_WEBHOOK_SECRET", "")
 
 KAPSO_API_BASE = "https://api.kapso.ai/v1"
+
+# ── GitHub Vault Sync ──────────────────────────────────────────────
+GITHUB_TOKEN      = os.getenv("GITHUB_TOKEN", "")
+GITHUB_VAULT_OWNER = os.getenv("GITHUB_VAULT_OWNER", "gaelg22")
+GITHUB_VAULT_REPO  = os.getenv("GITHUB_VAULT_REPO", "doctor-vault")
 
 # ══════════════════════════════════════════════════════════════════
 #  Constantes internas
@@ -260,6 +266,50 @@ def guardar_cita(datos: dict) -> Path:
     return archivo
 
 
+async def push_cita_github(nombre_archivo: str, contenido: str) -> None:
+    """Sube el .md de la cita al repo doctor-vault en GitHub para sincronizar con Obsidian."""
+    if not GITHUB_TOKEN:
+        console.print("[yellow]GITHUB_TOKEN no configurado — cita no sincronizada con Obsidian[/yellow]")
+        return
+
+    url = (
+        f"https://api.github.com/repos/{GITHUB_VAULT_OWNER}/{GITHUB_VAULT_REPO}"
+        f"/contents/Citas/{nombre_archivo}"
+    )
+    headers = {
+        "Authorization": f"token {GITHUB_TOKEN}",
+        "Accept": "application/vnd.github+json",
+    }
+    contenido_b64 = base64.b64encode(contenido.encode("utf-8")).decode("ascii")
+
+    # Verificar si ya existe (para obtener el sha en caso de update)
+    sha = None
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            r = await client.get(url, headers=headers)
+            if r.status_code == 200:
+                sha = r.json().get("sha")
+    except Exception:
+        pass
+
+    payload: dict = {
+        "message": f"Nueva cita: {nombre_archivo}",
+        "content": contenido_b64,
+    }
+    if sha:
+        payload["sha"] = sha
+
+    try:
+        async with httpx.AsyncClient(timeout=15) as client:
+            resp = await client.put(url, headers=headers, json=payload)
+            if resp.status_code in (200, 201):
+                console.print(f"[bold green]✅ Cita sincronizada con Obsidian: {nombre_archivo}[/bold green]")
+            else:
+                console.print(f"[red]GitHub API error {resp.status_code}: {resp.text[:200]}[/red]")
+    except Exception as e:
+        console.print(f"[red]Error al subir cita a GitHub: {e}[/red]")
+
+
 def extraer_datos_cita(conv: list[dict]) -> dict | None:
     texto_conv = "\n".join(
         f"{'Paciente' if m['role'] == 'user' else AGENTE_NOMBRE}: {m['content']}"
@@ -366,6 +416,7 @@ async def procesar_mensaje(phone: str, mensaje: str) -> str:
             try:
                 ruta = guardar_cita(cita_pendiente)
                 cita_guardada = ruta.name
+                await push_cita_github(ruta.name, ruta.read_text(encoding="utf-8"))
             except Exception as e:
                 console.print(f"[red]Error guardando cita: {e}[/red]")
             nota_pendiente = (
@@ -380,6 +431,7 @@ async def procesar_mensaje(phone: str, mensaje: str) -> str:
             try:
                 ruta = guardar_cita(cita_pendiente)
                 cita_guardada = ruta.name
+                await push_cita_github(ruta.name, ruta.read_text(encoding="utf-8"))
             except Exception as e:
                 console.print(f"[red]Error guardando cita: {e}[/red]")
             nota_pendiente = (
@@ -410,6 +462,7 @@ async def procesar_mensaje(phone: str, mensaje: str) -> str:
                 try:
                     ruta = guardar_cita(datos)
                     cita_guardada = ruta.name
+                    await push_cita_github(ruta.name, ruta.read_text(encoding="utf-8"))
                     nota_pendiente = (
                         f"CITA GUARDADA EXITOSAMENTE en {ruta.name}. "
                         f"Confirma con 'tu cita está registrada' y el resumen en prosa natural.\n\n"
