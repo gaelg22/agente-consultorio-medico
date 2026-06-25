@@ -117,7 +117,7 @@ async def lifespan(app: FastAPI):
     await init_postgres()
 
     console.print("[cyan]Cargando modelo de embeddings (Obsidian RAG)...[/cyan]")
-    modelo_embeddings = SentenceTransformer("sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
+    modelo_embeddings = SentenceTransformer("all-MiniLM-L6-v2")
 
     chroma_client = chromadb.PersistentClient(path=str(CHROMA_PATH))
     collection    = chroma_client.get_or_create_collection("documentos")
