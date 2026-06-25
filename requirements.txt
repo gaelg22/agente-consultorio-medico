@@ -1,0 +1,8 @@
+anthropic
+chromadb
+sentence-transformers
+fastapi
+uvicorn
+python-dotenv
+rich
+httpx

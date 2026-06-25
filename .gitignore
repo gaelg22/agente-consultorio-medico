@@ -1,0 +1,21 @@
+# Secretos — NUNCA subir al repo
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+dist/
+build/
+*.egg
+.venv/
+venv/
+env/
+
+# chroma_db SÍ se incluye (necesario para Render)
+# !chroma_db/
+
+# OS
+.DS_Store
+Thumbs.db
