@@ -408,16 +408,29 @@ async def webhook_recibir(request: Request):
     except json.JSONDecodeError:
         raise HTTPException(status_code=400, detail="Payload inválido")
 
-    if payload.get("event") != "whatsapp.message.received":
-        return JSONResponse(content={"status": "ignored"})
+    # Log completo para diagnóstico
+    event = payload.get("event", "")
+    console.print(f"[yellow]📨 Kapso event: {event}[/yellow]")
+    console.print(f"[dim]Payload: {json.dumps(payload)[:500]}[/dim]")
+
+    # Aceptar cualquier variante de mensaje recibido
+    if "message" not in event.lower() or "receiv" not in event.lower():
+        return JSONResponse(content={"status": "ignored", "event": event})
 
     data = payload.get("data", {})
-    if data.get("type") != "text":
-        return JSONResponse(content={"status": "non-text ignored"})
 
-    phone   = data.get("from", "")
-    mensaje = data.get("text", {}).get("body", "").strip()
+    # Soporte para estructura v1 y v2 de Kapso
+    msg_type = data.get("type", "")
+    phone    = data.get("from", "") or data.get("phone", "")
+    # Texto puede estar en data.text.body o data.message.text
+    texto_obj = data.get("text") or data.get("message") or {}
+    if isinstance(texto_obj, str):
+        mensaje = texto_obj.strip()
+    else:
+        mensaje = (texto_obj.get("body") or texto_obj.get("text") or "").strip()
+
     if not phone or not mensaje:
+        console.print(f"[yellow]Mensaje vacío o sin teléfono: phone={phone!r}[/yellow]")
         return JSONResponse(content={"status": "empty"})
 
     console.print(f"[cyan]📱 {phone}:[/cyan] {mensaje[:80]}")
