@@ -30,7 +30,7 @@ from rich.console import Console
 from db_mongo    import init_mongo, guardar_cita, buscar_cita_existente, verificar_conflicto
 from db_mongo    import horas_disponibles, proximas_disponibilidades, validar_propuesta_horario
 from db_mongo    import get_citas_para_recordatorio, marcar_recordatorio_enviado
-from db_postgres import init_postgres, log_mensaje
+from db_postgres import init_postgres, log_mensaje, existe_conversacion_previa
 from admin       import router as admin_router
 
 load_dotenv()
@@ -338,7 +338,7 @@ async def procesar_mensaje(phone: str, mensaje: str) -> str:
     hoy             = date.today()
     dia_hoy         = DIAS_SEMANA[hoy.weekday()]
     fecha_maxima    = hoy + timedelta(days=90)
-    primer_mensaje  = len(historial) == 1  # solo el mensaje actual, sin historial previo
+    primer_mensaje  = (len(historial) == 1) and not (await existe_conversacion_previa(phone))
 
     alerta_horario = ""
     if not primer_mensaje:

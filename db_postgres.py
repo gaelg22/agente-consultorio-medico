@@ -114,6 +114,17 @@ async def get_mensajes_sesion(session_id: str) -> list[dict]:
     return [dict(r) for r in rows]
 
 
+async def existe_conversacion_previa(session_id: str) -> bool:
+    """Verifica si ya existe algún log previo para este session_id (teléfono)."""
+    pool = get_pool()
+    async with pool.acquire() as conn:
+        val = await conn.fetchval(
+            "SELECT EXISTS(SELECT 1 FROM conversaciones WHERE session_id = $1 LIMIT 1)",
+            session_id
+        )
+        return bool(val)
+
+
 # ── Feedback del doctor ────────────────────────────────────────────
 
 async def guardar_feedback(
