@@ -317,21 +317,36 @@ async def procesar_mensaje(phone: str, mensaje: str) -> str:
     disponibilidad = await proximas_disponibilidades(5)
 
     # --- Construir system prompt con vault completo ---
-    hoy          = date.today()
-    dia_hoy      = DIAS_SEMANA[hoy.weekday()]
-    fecha_maxima = hoy + timedelta(days=90)
+    hoy             = date.today()
+    dia_hoy         = DIAS_SEMANA[hoy.weekday()]
+    fecha_maxima    = hoy + timedelta(days=90)
+    primer_mensaje  = len(historial) == 1  # solo el mensaje actual, sin historial previo
+
+    if primer_mensaje:
+        instruccion_saludo = (
+            "PRIMER CONTACTO: Este es el PRIMER mensaje de este paciente.\n"
+            "Debes presentarte brevemente como parte del equipo del consultorio.\n"
+            "Ejemplo de bienvenida: 'Hola, buen día. Soy parte del equipo del consultorio "
+            f"del Dr. Alejandro Martínez. Podemos ayudarte con citas y cualquier duda. "
+            "¿En qué te puedo ayudar?'\n"
+            "Adáptalo según el saludo del paciente (mañana/tarde/noche).\n\n"
+        )
+    else:
+        instruccion_saludo = (
+            "USUARIO RECURRENTE: Este paciente ya ha conversado antes. "
+            "No te presentes de nuevo. Saluda con calidez y atiende su solicitud.\n\n"
+        )
 
     system_prompt = (
         f"Eres {AGENTE_NOMBRE}, {AGENTE_ROL} del {NEGOCIO_NOMBRE} ({NEGOCIO_TIPO}).\n"
         f"Hablas en español, con tono tranquilo, cálido y empático.\n"
         f"Nunca dices que eres una IA. Eres {AGENTE_NOMBRE}, del equipo.\n\n"
 
+        f"{instruccion_saludo}"
+
         "🚫 FORMATO PROHIBIDO: NUNCA uses asteriscos (*), guiones (-) como viñetas, "
         "ni ningún símbolo de markdown. SOLO texto plano y natural.\n"
         "Incorrecto: '*Tu cita está registrada*'  Correcto: 'Tu cita está registrada'\n\n"
-
-        f"⚠️ NUNCA TE PRESENTES NI DIGAS TU NOMBRE al inicio de cada mensaje.\n"
-        f"Si el paciente dice 'Hola', responde con calidez pero SIN decir tu nombre.\n\n"
 
         "⚠️ FRASES PROHIBIDAS: 'Te entiendo', 'Entiendo perfectamente', 'Entiendo tu preocupación'.\n"
         "Usa: 'Qué bueno que nos contactas', 'Es válido que te preocupe', 'Eso suena incómodo'.\n\n"
