@@ -234,13 +234,15 @@ async def get_citas_para_recordatorio(minutos_antes: int = 24 * 60) -> list[dict
         try:
             creada_en = c.get("creada_en")
             if creada_en:
-                # creada_en está en UTC. Calculamos la diferencia con datetime.utcnow()
+                # Asegurar que ambos datetimes sean naïve (sin timezone) para evitar TypeError
+                if creada_en.tzinfo is not None:
+                    creada_en = creada_en.replace(tzinfo=None)
                 diff_segundos = (datetime.utcnow() - creada_en).total_seconds()
                 # 300 segundos = 5 minutos
                 if diff_segundos >= 300:
                     c["_id"] = str(c["_id"])
                     citas.append(c)
-        except (ValueError, KeyError):
+        except Exception:
             continue
     return citas
 
