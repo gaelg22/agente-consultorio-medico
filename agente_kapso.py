@@ -177,9 +177,11 @@ async def extraer_datos_cita(conv: list[dict]) -> dict | None:
         f"{'Paciente' if m['role'] == 'user' else AGENTE_NOMBRE}: {m['content']}"
         for m in conv[-12:]
     )
+    anio_actual = date.today().year
     prompt = (
+        f"Hoy es {date.today().isoformat()} (año {anio_actual}).\n"
         "Extrae los datos de la cita médica de esta conversación.\n"
-        "Devuelve SOLO un JSON con: nombre, fecha (YYYY-MM-DD), hora (HH:MM), motivo, tipo.\n"
+        f"Devuelve SOLO un JSON con: nombre, fecha (YYYY-MM-DD, el año DEBE ser {anio_actual} o posterior), hora (HH:MM), motivo, tipo.\n"
         "Para 'tipo' usa solo 'primera vez' o 'seguimiento'.\n"
         "Si un dato no está claro, usa 'por definir'.\n\n"
         f"Conversación:\n{texto_conv}\n\nJSON:"
@@ -192,7 +194,19 @@ async def extraer_datos_cita(conv: list[dict]) -> dict | None:
         raw   = resp.content[0].text
         match = re.search(r"\{.*\}", raw, re.DOTALL)
         if match:
-            return json.loads(match.group())
+            datos = json.loads(match.group())
+            # Corregir año si el LLM usó un año pasado
+            fecha = datos.get("fecha", "")
+            if fecha and len(fecha) == 10:
+                try:
+                    partes = fecha.split("-")
+                    if int(partes[0]) < anio_actual:
+                        partes[0] = str(anio_actual)
+                        datos["fecha"] = "-".join(partes)
+                        console.print(f"[yellow]⚠️ Año corregido: {fecha} → {datos['fecha']}[/yellow]")
+                except (ValueError, IndexError):
+                    pass
+            return datos
     except Exception:
         pass
     return None
