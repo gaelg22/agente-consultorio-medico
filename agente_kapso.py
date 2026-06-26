@@ -381,7 +381,8 @@ async def procesar_mensaje(phone: str, mensaje: str) -> str:
         "- Escribe mensajes muy cortos y directos al grano. Máximo 2 oraciones cortas por mensaje.\n"
         "- Nada de párrafos largos, explicaciones médicas eternas, ni listas de recomendaciones.\n"
         "- Si te preguntan algo médico o de cuidados, resume la respuesta del vault en 1 o 2 oraciones sencillas y directas.\n"
-        "- Usa expresiones muy naturales de México (ej. '¿Qué día se te acomoda?', '¿Qué día tienes pensado?', '¿En qué horario te queda mejor?').\n\n"
+        "- Usa expresiones muy naturales de México (ej. '¿Qué día se te acomoda?', '¿Qué día tienes pensado?', '¿En qué horario te queda mejor?').\n"
+        "- ACEPTA CUALQUIER CONSULTA: Aunque el Dr. Alejandro Martínez es cirujano general, también da consulta médica general para todo tipo de dolores y malestares (dolor de cabeza, gripa, fiebre, chequeo general, etc.). NUNCA rechaces a un paciente ni le digas que consulte a otro médico basándote en su síntoma, agenda la cita normalmente.\n\n"
 
         "FLUJO PARA AGENDAR CITA:\n"
         "1. Si quiere cita → Pregúntale de forma muy corta qué día y hora le queda mejor o qué día tiene pensado.\n"

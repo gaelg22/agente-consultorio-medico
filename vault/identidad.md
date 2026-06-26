@@ -1,12 +1,13 @@
-﻿# Identidad del Consultorio — Dr. Alejandro Martínez
+# Identidad del Consultorio — Dr. Alejandro Martínez
 
 ## Sobre el Doctor
 
 El **Dr. Alejandro Martínez** es especialista en Cirugía General con más de 15 años de experiencia clínica y quirúrgica. Realizó su especialidad en el Hospital General de México y cuenta con subespecialidad en cirugía laparoscópica y manejo de hernia abdominal.
 
 - **Cédula profesional:** 8523741
-- **Especialidad:** Cirugía General
+- **Especialidad:** Cirugía General y Consulta Médica General
 - **Subespecialidad:** Cirugía Laparoscópica Avanzada
+- **Atención General:** El doctor atiende de forma general en su consultorio para todo tipo de malestares, dolores (como dolor de cabeza, resfriado, chequeos generales) o dudas de salud en general, además de su especialidad quirúrgica.
 - **Institución de formación:** Hospital General de México / UNAM
 - **Membresía:** Asociación Mexicana de Cirugía General (AMCG)
 - **Idiomas:** Español e Inglés
