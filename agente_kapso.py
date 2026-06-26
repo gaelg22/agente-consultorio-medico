@@ -220,20 +220,20 @@ def calcular_dias_proximos() -> str:
 # ══════════════════════════════════════════════════════════════════
 
 async def enviar_whatsapp(to_phone: str, texto: str) -> bool:
-    # Kapso Standalone API — https://app.kapso.ai/api/v1/whatsapp_messages
-    url = "https://app.kapso.ai/api/v1/whatsapp_messages"
+    # Kapso Meta Proxy API — https://api.kapso.ai/meta/whatsapp/v24.0/{phone_id}/messages
+    url = f"https://api.kapso.ai/meta/whatsapp/v24.0/{KAPSO_PHONE_NUMBER_ID}/messages"
     headers = {
         "X-API-Key":    KAPSO_API_KEY,
         "Content-Type": "application/json",
     }
     payload = {
-        "message": {
-            "phone_number": to_phone,
-            "type": "text",
-            "text": {"body": texto},
-        }
+        "messaging_product": "whatsapp",
+        "recipient_type":    "individual",
+        "to":                to_phone,
+        "type":              "text",
+        "text":              {"body": texto},
     }
-    console.print(f"[blue]📤 Enviando a Kapso → {url}[/blue]")
+    console.print(f"[blue]📤 Enviando → {url}[/blue]")
     console.print(f"[dim]To: {to_phone} | Msg: {texto[:60]}...[/dim]")
     try:
         async with httpx.AsyncClient(timeout=15) as client:
