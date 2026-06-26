@@ -106,6 +106,56 @@ async def verificar_conflicto(fecha: str, hora: str) -> Optional[dict]:
     return None
 
 
+async def validar_propuesta_horario(fecha: str, hora: str) -> dict:
+    """
+    Valida si la propuesta de fecha y hora cae en los horarios de atención y está libre.
+    """
+    if not fecha or not hora or "por definir" in (fecha + hora).lower():
+        return {"valido": True, "razon": ""}
+
+    try:
+        dia_dt = date.fromisoformat(fecha)
+        nombre_dia = DIAS_SEMANA[dia_dt.weekday()]
+    except ValueError:
+        return {"valido": False, "razon": "Formato de fecha inválido."}
+
+    rango = HORARIOS_DIA.get(nombre_dia)
+    if rango is None:
+        return {"valido": False, "razon": f"El consultorio está cerrado los domingos."}
+
+    try:
+        h, m = map(int, hora.split(":"))
+        min_propuesto = h * 60 + m
+    except ValueError:
+        return {"valido": False, "razon": "Formato de hora inválido."}
+
+    h_ini_str = f"{rango['inicio'] // 60:02d}:{rango['inicio'] % 60:02d}"
+    h_fin_str = f"{rango['fin'] // 60:02d}:{rango['fin'] % 60:02d}"
+    if min_propuesto < rango["inicio"] or min_propuesto >= rango["fin"]:
+        return {
+            "valido": False,
+            "razon": f"Ese horario está fuera de servicio. Los {nombre_dia}s abrimos de {h_ini_str} a {h_fin_str}."
+        }
+
+    from datetime import datetime as dt
+    if dia_dt == date.today():
+        ahora_min = dt.now().hour * 60 + dt.now().minute
+        if min_propuesto <= ahora_min + 30:
+            return {
+                "valido": False,
+                "razon": "Ese horario ya pasó o está demasiado próximo para agendar el día de hoy."
+            }
+
+    conflicto = await verificar_conflicto(fecha, hora)
+    if conflicto:
+        return {
+            "valido": False,
+            "razon": f"Ese horario ya está ocupado por otra cita."
+        }
+
+    return {"valido": True, "razon": ""}
+
+
 async def horas_disponibles(fecha: str) -> list[str]:
     """Devuelve horas libres en la fecha indicada según horario del día."""
     try:

@@ -28,7 +28,7 @@ from fastapi.responses import JSONResponse, HTMLResponse
 from rich.console import Console
 
 from db_mongo    import init_mongo, guardar_cita, buscar_cita_existente, verificar_conflicto
-from db_mongo    import horas_disponibles, proximas_disponibilidades
+from db_mongo    import horas_disponibles, proximas_disponibilidades, validar_propuesta_horario
 from db_mongo    import get_citas_para_recordatorio, marcar_recordatorio_enviado
 from db_postgres import init_postgres, log_mensaje
 from admin       import router as admin_router
@@ -323,6 +323,36 @@ async def procesar_mensaje(phone: str, mensaje: str) -> str:
     fecha_maxima    = hoy + timedelta(days=90)
     primer_mensaje  = len(historial) == 1  # solo el mensaje actual, sin historial previo
 
+    alerta_horario = ""
+    if not primer_mensaje:
+        try:
+            datos_tentativos = await extraer_datos_cita(historial)
+            if datos_tentativos:
+                fecha_t = datos_tentativos.get("fecha", "por definir")
+                hora_t = datos_tentativos.get("hora", "por definir")
+                if fecha_t != "por definir" and hora_t != "por definir":
+                    val = await validar_propuesta_horario(fecha_t, hora_t)
+                    if not val["valido"]:
+                        alerta_horario = (
+                            f"\n⚠️ ALERTA DE HORARIO RECHAZADO:\n"
+                            f"El paciente ha sugerido o pedido cita el {fecha_t} a las {hora_t}.\n"
+                            f"Este horario NO ES POSIBLE por la siguiente razón: {val['razon']}.\n"
+                            f"Debes responderle al paciente de forma muy humana diciendo algo como 'Oye sabes qué, ese día o a esa hora no se puede / está cerrado por [razón], te recomiendo mejor...' "
+                            f"y proponerle opciones de tu lista de disponibilidad.\n\n"
+                        )
+                    else:
+                        # Si es válido pero falta el motivo, obligamos a preguntar motivo antes de confirmar
+                        motivo_t = datos_tentativos.get("motivo", "por definir")
+                        if motivo_t == "por definir":
+                            alerta_horario = (
+                                f"\n⚠️ ALERTA DE DATOS FALTANTES:\n"
+                                f"El horario del {fecha_t} a las {hora_t} está disponible y es válido, pero AÚN NO sabemos el motivo de la consulta.\n"
+                                f"Antes de dar por registrada la cita, debes preguntarle amablemente cuál es el motivo de su consulta o qué es lo que requiere revisar.\n"
+                                f"NO confirmes la cita ('tu cita está registrada') hasta obtener el motivo de la consulta.\n\n"
+                            )
+        except Exception as e:
+            console.print(f"[red]Error en pre-validación de horario: {e}[/red]")
+
     if primer_mensaje:
         instruccion_saludo = (
             "PRIMER CONTACTO: Este es el PRIMER mensaje de este paciente.\n"
@@ -344,6 +374,7 @@ async def procesar_mensaje(phone: str, mensaje: str) -> str:
         f"Nunca dices que eres una IA. Eres {AGENTE_NOMBRE}, del equipo.\n\n"
 
         f"{instruccion_saludo}"
+        f"{alerta_horario}"
 
         "🚫 FORMATO PROHIBIDO: NUNCA uses asteriscos (*), guiones (-) como viñetas, "
         "ni ningún símbolo de markdown. SOLO texto plano y natural.\n"
@@ -354,17 +385,18 @@ async def procesar_mensaje(phone: str, mensaje: str) -> str:
 
         "TONO HUMANO — MUY IMPORTANTE:\n"
         "Escribe exactamente como una persona real tecleando en WhatsApp.\n"
-        "Mensajes naturales, pueden ser medianamente largos si el tema lo requiere.\n"
-        "Sin listas numeradas ni viñetas. Prosa conversacional, profesional pero humana.\n\n"
+        "Mensajes naturales, profesionales pero sumamente humanos y fluidos.\n"
+        "Sin listas numeradas ni viñetas en tu conversación normal.\n\n"
 
         "FLUJO PARA AGENDAR CITA:\n"
-        "1. El paciente dice que quiere cita → pregúntale qué día y horario le acomoda.\n"
-        "   NO muestres el listado de horarios a menos que el paciente los pida explícitamente.\n"
-        "2. El paciente da un día/hora → verifica disponibilidad. Si ese slot está libre, confírmalo.\n"
-        "   Si no está disponible, díselo amablemente y sugiere el slot más cercano disponible.\n"
-        "3. Antes de confirmar la cita, si aún no lo sabes, pregunta el motivo de la consulta.\n"
-        "4. Pide también nombre completo, teléfono y si es primera vez o seguimiento.\n"
-        "5. Cuando tengas todos los datos, confirma con 'tu cita está registrada'.\n\n"
+        "1. El paciente dice que quiere una cita → pregúntale qué día y hora le acomodaría o tiene planeado.\n"
+        "   🚫 REGLA CRÍTICA: NUNCA muestres ni listes los horarios de golpe al inicio. Deja que el paciente sugiera primero.\n"
+        "   Si el paciente te pide explícitamente 'dame los horarios' o 'qué horarios tienes', entonces sí muéstraselos.\n"
+        "2. El paciente propone un día/hora → el sistema la validará automáticamente.\n"
+        "   Si ves una ALERTA de horario rechazado arriba, obedece la alerta y explícale con empatía por qué no se puede y sugiérele opciones.\n"
+        "3. Si el horario es válido, pregúntale el motivo de la consulta (por qué necesita ver al doctor) antes de confirmar.\n"
+        "4. Solicita también su nombre completo (y opcionalmente confirma su teléfono).\n"
+        "5. Cuando tengas todos los datos (fecha, hora, motivo y nombre), confirma diciendo en una sola frase que 'tu cita está registrada'.\n\n"
 
         "Si el paciente pide ver los horarios disponibles → muéstraselos por día de forma clara.\n"
         "Cuando confirmes la cita: menciona nombre, fecha, hora y 'tu cita está registrada'.\n\n"
