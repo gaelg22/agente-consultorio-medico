@@ -253,79 +253,21 @@ async def enviar_whatsapp(to_phone: str, texto: str) -> bool:
 # ══════════════════════════════════════════════════════════════════
 
 async def procesar_mensaje(phone: str, mensaje: str) -> str:
-    historial      = historiales[phone]
-    cita_pendiente = citas_pendientes[phone]
-
-    inicio           = time.time()
-    omitir_deteccion = False
-    nota_pendiente   = ""
+    historial = historiales[phone]
+    inicio    = time.time()
 
     # Log del mensaje a PostgreSQL
     await log_mensaje(phone, "user", mensaje)
-
-    # --- 1. Resolver confirmación de cita duplicada ---
-    if cita_pendiente:
-        respuesta_usuario = usuario_confirma(mensaje)
-        if respuesta_usuario is True:
-            try:
-                doc = await guardar_cita(cita_pendiente, telefono=phone)
-                nota_pendiente = (
-                    f"ACCIÓN COMPLETADA: El paciente confirmó SÍ ser la misma persona. "
-                    f"Cita de {doc.get('nombre','?')} el {doc.get('fecha','?')} "
-                    f"a las {doc.get('hora','?')} guardada. Confirma con 'tu cita está registrada'.\n\n"
-                )
-            except Exception as e:
-                console.print(f"[red]Error guardando cita: {e}[/red]")
-            citas_pendientes[phone] = None
-            omitir_deteccion = True
-
-        elif respuesta_usuario is False:
-            try:
-                doc = await guardar_cita(cita_pendiente, telefono=phone)
-                nota_pendiente = (
-                    f"ACCIÓN COMPLETADA: Es persona diferente. "
-                    f"Cita de {doc.get('nombre','?')} guardada. Atiende al nuevo paciente.\n\n"
-                )
-            except Exception as e:
-                console.print(f"[red]Error guardando cita: {e}[/red]")
-            citas_pendientes[phone] = None
-            omitir_deteccion = True
-
-    # --- 2. Detectar confirmación y guardar en Mongo ---
-    if not omitir_deteccion and detectar_confirmacion(
-        historial[-1]["content"] if historial else ""
-    ):
-        historial.append({"role": "user", "content": mensaje})
-        datos = await extraer_datos_cita(historial)
-        if datos and datos.get("fecha", "por definir") != "por definir":
-            conflicto = await verificar_conflicto(datos.get("fecha", ""), datos.get("hora", ""))
-            if conflicto:
-                citas_pendientes[phone] = datos
-                nota_pendiente = (
-                    f"ALERTA: Ya hay cita el {conflicto['fecha']} a las {conflicto['hora']}. "
-                    f"Pregunta amablemente si es la misma persona.\n\n"
-                )
-            else:
-                try:
-                    doc = await guardar_cita(datos, telefono=phone)
-                    nota_pendiente = (
-                        f"CITA GUARDADA: {doc.get('nombre','?')} "
-                        f"el {doc.get('fecha','?')} a las {doc.get('hora','?')}. "
-                        f"Confirma con 'tu cita está registrada'.\n\n"
-                    )
-                except Exception as e:
-                    nota_pendiente = f"Error guardando cita: {e}\n\n"
-    else:
-        historial.append({"role": "user", "content": mensaje})
+    historial.append({"role": "user", "content": mensaje})
 
     if len(historial) > MAX_HISTORIAL:
         historiales[phone] = historial[-MAX_HISTORIAL:]
         historial = historiales[phone]
 
-    # --- 3. Disponibilidad en tiempo real desde MongoDB ---
+    # --- Disponibilidad en tiempo real desde MongoDB ---
     disponibilidad = await proximas_disponibilidades(5)
 
-    # --- 4. Construir system prompt con vault completo ---
+    # --- Construir system prompt con vault completo ---
     hoy          = date.today()
     dia_hoy      = DIAS_SEMANA[hoy.weekday()]
     fecha_maxima = hoy + timedelta(days=90)
@@ -361,12 +303,11 @@ async def procesar_mensaje(phone: str, mensaje: str) -> str:
         f"CALENDARIO 90 DÍAS:\n{calcular_dias_proximos()}\n\n"
         f"FECHA MÁXIMA: {fecha_maxima.isoformat()}.\n\n"
 
-        f"{nota_pendiente}"
         "═══ INFORMACIÓN DEL CONSULTORIO (usa SOLO esto para responder) ═══\n\n"
         f"{vault_contenido}"
     )
 
-    # --- 5. LLM ---
+    # --- LLM ---
     try:
         resp = cliente_ant.messages.create(
             model=LLM_MODEL,
@@ -382,9 +323,30 @@ async def procesar_mensaje(phone: str, mensaje: str) -> str:
     historial.append({"role": "assistant", "content": texto_respuesta})
     await log_mensaje(phone, "assistant", texto_respuesta)
 
+    # --- Guardar cita si el bot acaba de confirmarla ---
+    if detectar_confirmacion(texto_respuesta):
+        console.print(f"[yellow]🔍 Confirmación detectada — extrayendo datos de cita...[/yellow]")
+        datos = await extraer_datos_cita(historial)
+        if datos and datos.get("fecha", "por definir") != "por definir":
+            conflicto = await verificar_conflicto(datos.get("fecha", ""), datos.get("hora", ""))
+            if conflicto:
+                console.print(f"[yellow]⚠️ Conflicto de horario detectado: {conflicto}[/yellow]")
+            else:
+                try:
+                    doc = await guardar_cita(datos, telefono=phone)
+                    console.print(
+                        f"[bold green]✅ Cita guardada en MongoDB: "
+                        f"{doc.get('nombre')} el {doc.get('fecha')} a las {doc.get('hora')}[/bold green]"
+                    )
+                except Exception as e:
+                    console.print(f"[red]❌ Error guardando cita en MongoDB: {e}[/red]")
+        else:
+            console.print(f"[yellow]⚠️ No se pudo extraer datos de cita del historial[/yellow]")
+
     ms = int((time.time() - inicio) * 1000)
     console.print(f"[dim]{phone} → {ms}ms[/dim]")
     return texto_respuesta
+
 
 
 # ══════════════════════════════════════════════════════════════════
