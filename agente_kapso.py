@@ -471,7 +471,8 @@ async def health():
 async def admin_citas(password: str = ""):
     if password != ADMIN_PASSWORD:
         return HTMLResponse("<h2>❌ Contraseña incorrecta. Usa ?password=TU_PASSWORD</h2>", status_code=403)
-    citas = await db_mongo["citas"].find().sort("fecha", 1).to_list(200)
+    from db_mongo import get_citas_recientes
+    citas = await get_citas_recientes(200)
     filas = ""
     for c in citas:
         filas += f"""<tr>
@@ -481,7 +482,7 @@ async def admin_citas(password: str = ""):
             <td>{c.get('hora','')}</td>
             <td>{c.get('motivo','')}</td>
             <td>{c.get('tipo','')}</td>
-            <td>{str(c.get('created_at',''))[:16]}</td>
+            <td>{str(c.get('creada_en',''))[:16]}</td>
         </tr>"""
     html = f"""<!DOCTYPE html><html><head><meta charset="utf-8">
     <title>Citas — Consultorio Dr. Martínez</title>
@@ -496,26 +497,19 @@ async def admin_citas(password: str = ""):
 
 
 @app.get("/admin/conversaciones")
-async def admin_conversaciones(password: str = "", phone: str = ""):
+async def admin_conversaciones(password: str = ""):
     if password != ADMIN_PASSWORD:
         return HTMLResponse("<h2>❌ Contraseña incorrecta. Usa ?password=TU_PASSWORD</h2>", status_code=403)
-    if not pg_pool:
-        return HTMLResponse("<h2>PostgreSQL no conectado</h2>")
-    async with pg_pool.acquire() as conn:
-        if phone:
-            rows = await conn.fetch(
-                "SELECT * FROM conversaciones WHERE phone=$1 ORDER BY timestamp DESC LIMIT 100", phone)
-        else:
-            rows = await conn.fetch(
-                "SELECT * FROM conversaciones ORDER BY timestamp DESC LIMIT 200")
+    from db_postgres import get_conversaciones
+    rows = await get_conversaciones(200)
     filas = ""
     for r in rows:
-        color = "#d4edda" if r["role"] == "assistant" else "#fff"
+        color = "#d4edda" if r["rol"] == "assistant" else "#fff"
         filas += f"""<tr style="background:{color}">
             <td>{str(r['timestamp'])[:16]}</td>
-            <td>{r['phone']}</td>
-            <td><b>{r['role']}</b></td>
-            <td style="max-width:500px;word-wrap:break-word">{r['content'][:300]}</td>
+            <td>{r['session_id']}</td>
+            <td><b>{r['rol']}</b></td>
+            <td style="max-width:500px;word-wrap:break-word">{str(r['mensaje'])[:300]}</td>
         </tr>"""
     html = f"""<!DOCTYPE html><html><head><meta charset="utf-8">
     <title>Conversaciones — Consultorio</title>
@@ -523,8 +517,7 @@ async def admin_conversaciones(password: str = "", phone: str = ""):
     th,td{{border:1px solid #ddd;padding:8px;text-align:left}} th{{background:#1a1a2e;color:white}}
     h1{{color:#1a1a2e}}</style></head>
     <body><h1>💬 Conversaciones ({len(rows)})</h1>
-    <p>Filtrar por teléfono: <a href="?password={password}&phone=524921112233">524921112233</a></p>
-    <table><tr><th>Fecha</th><th>Teléfono</th><th>Rol</th><th>Mensaje</th></tr>
+    <table><tr><th>Fecha</th><th>Session (Teléfono)</th><th>Rol</th><th>Mensaje</th></tr>
     {filas or '<tr><td colspan=4>Sin mensajes aún</td></tr>'}
     </table></body></html>"""
     return HTMLResponse(html)
@@ -535,3 +528,4 @@ if __name__ == "__main__":
     port = int(os.getenv("PORT", 8002))
     console.print(f"[bold green]🚀 {AGENTE_NOMBRE} — {NEGOCIO_NOMBRE}[/bold green]")
     uvicorn.run("agente_kapso:app", host="0.0.0.0", port=port, reload=False)
+
