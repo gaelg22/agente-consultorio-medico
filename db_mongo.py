@@ -222,21 +222,24 @@ async def get_citas_recientes(limit: int = 50) -> list[dict]:
     return citas
 
 
-async def get_citas_para_recordatorio(minutos_antes: int = 5) -> list[dict]:
-    """Citas que empiezan en 'minutos_antes' minutos y aún no tienen recordatorio enviado."""
+async def get_citas_para_recordatorio(minutos_antes: int = 24 * 60) -> list[dict]:
+    """
+    Citas para recordatorio: en producción serían 24 horas antes, pero para pruebas 
+    del usuario, enviamos el recordatorio a los 5 minutos de haber creado la cita.
+    """
     from datetime import datetime
-    db  = get_db()
-    now = datetime.now()
-
+    db = get_db()
     citas = []
     async for c in db.find({"estado": {"$ne": "cancelada"}, "recordatorio_enviado": {"$ne": True}}):
         try:
-            fecha_hora_str = f"{c['fecha']} {c['hora']}"
-            cita_dt = datetime.strptime(fecha_hora_str, "%Y-%m-%d %H:%M")
-            diff_min = (cita_dt - now).total_seconds() / 60
-            if 0 <= diff_min <= minutos_antes:
-                c["_id"] = str(c["_id"])
-                citas.append(c)
+            creada_en = c.get("creada_en")
+            if creada_en:
+                # creada_en está en UTC. Calculamos la diferencia con datetime.utcnow()
+                diff_segundos = (datetime.utcnow() - creada_en).total_seconds()
+                # 300 segundos = 5 minutos
+                if diff_segundos >= 300:
+                    c["_id"] = str(c["_id"])
+                    citas.append(c)
         except (ValueError, KeyError):
             continue
     return citas
