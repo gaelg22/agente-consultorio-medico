@@ -99,6 +99,7 @@ PALABRAS_NEGACION = [
 # Estado en memoria por usuario
 historiales:      dict[str, list[dict]] = defaultdict(list)
 citas_pendientes: dict[str, dict | None] = defaultdict(lambda: None)
+_mensajes_vistos: dict[str, float] = {}  # deduplicación de webhooks duplicados
 
 # Contenido del vault cargado al inicio
 vault_contenido: str = ""
@@ -353,20 +354,22 @@ async def procesar_mensaje(phone: str, mensaje: str) -> str:
 
         "TONO HUMANO — MUY IMPORTANTE:\n"
         "Escribe exactamente como una persona real tecleando en WhatsApp.\n"
-        "Mensajes cortos. Máximo 2-3 oraciones por mensaje. Nada de párrafos largos.\n"
-        "Sin despedidas elaboradas, sin listas de recomendaciones, sin instrucciones al final.\n"
-        "Ejemplos de tono correcto:\n"
-        "  - 'Claro, con gusto. ¿Qué día te queda mejor?'\n"
-        "  - 'Tu cita está registrada para el sábado 27 a las 9. Cualquier cambio avísanos.'\n"
-        "  - 'Qué bueno que nos contactas. ¿En qué te puedo ayudar?'\n\n"
+        "Mensajes naturales, pueden ser medianamente largos si el tema lo requiere.\n"
+        "Sin listas numeradas ni viñetas. Prosa conversacional, profesional pero humana.\n\n"
 
-        "EXCEPCIÓN — HORARIOS: cuando muestres disponibilidad, sí puedes listar los días y horas\n"
-        "de forma clara (un día por línea), para que el paciente pueda leer bien las opciones.\n\n"
+        "FLUJO PARA AGENDAR CITA:\n"
+        "1. El paciente dice que quiere cita → pregúntale qué día y horario le acomoda.\n"
+        "   NO muestres el listado de horarios a menos que el paciente los pida explícitamente.\n"
+        "2. El paciente da un día/hora → verifica disponibilidad. Si ese slot está libre, confírmalo.\n"
+        "   Si no está disponible, díselo amablemente y sugiere el slot más cercano disponible.\n"
+        "3. Antes de confirmar la cita, si aún no lo sabes, pregunta el motivo de la consulta.\n"
+        "4. Pide también nombre completo, teléfono y si es primera vez o seguimiento.\n"
+        "5. Cuando tengas todos los datos, confirma con 'tu cita está registrada'.\n\n"
 
-        "Cuando confirmes una cita: una sola frase con nombre, fecha, hora y 'tu cita está registrada'.\n"
-        "NO des recomendaciones, recordatorios ni instrucciones adicionales al confirmar.\n\n"
+        "Si el paciente pide ver los horarios disponibles → muéstraselos por día de forma clara.\n"
+        "Cuando confirmes la cita: menciona nombre, fecha, hora y 'tu cita está registrada'.\n\n"
 
-        "Si el paciente reporta molestia sin pedir cita: una oración de validación y ofrece la cita.\n"
+        "Si el paciente reporta molestia sin pedir cita: valida y ofrece la cita.\n"
         "URGENCIAS: urgencias o 911. NUNCA diagnósticos ni tratamientos.\n\n"
 
         f"FECHA DE HOY: {hoy.isoformat()} ({dia_hoy}).\n"
@@ -483,8 +486,24 @@ async def webhook_recibir(request: Request):
         console.print(f"[yellow]Mensaje vacío: phone={phone!r} msg={mensaje!r}[/yellow]")
         return JSONResponse(content={"status": "empty"})
 
+    # ── Deduplicación: ignorar si ya procesamos este mensaje en los últimos 30s ──
+    import hashlib as _hl
+    _clave = _hl.md5(f"{phone}:{mensaje}".encode()).hexdigest()
+    _ahora = time.time()
+    _mensajes_vistos.update({k: v for k, v in _mensajes_vistos.items() if _ahora - v < 30})
+    if _clave in _mensajes_vistos:
+        console.print(f"[yellow]⚠️ Mensaje duplicado ignorado: {phone} '{mensaje[:40]}'[/yellow]")
+        return JSONResponse(content={"status": "duplicate"})
+    _mensajes_vistos[_clave] = _ahora
+
     console.print(f"[cyan]📱 {phone}:[/cyan] {mensaje[:80]}")
     respuesta = await procesar_mensaje(phone, mensaje)
+
+    # ── Simular tiempo de escritura (más natural) ──
+    chars = len(respuesta)
+    delay = min(chars * 0.04, 10.0)  # ~40ms por carácter, máximo 10s
+    await asyncio.sleep(delay)
+
     await enviar_whatsapp(phone, respuesta)
     return JSONResponse(content={"status": "ok"})
 
