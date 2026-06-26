@@ -541,6 +541,26 @@ async def admin_conversaciones(password: str = ""):
     </table></body></html>"""
     return HTMLResponse(html)
 
+@app.get("/admin/limpiar")
+async def admin_limpiar(password: str = ""):
+    if password != ADMIN_PASSWORD:
+        return HTMLResponse("<h2>❌ Contraseña incorrecta</h2>", status_code=403)
+    from db_postgres import get_pool
+    pool = get_pool()
+    async with pool.acquire() as conn:
+        await conn.execute("TRUNCATE TABLE conversaciones RESTART IDENTITY;")
+    historiales.clear()
+    citas_pendientes.clear()
+    console.print("[bold yellow]🧹 Logs y caché limpiados[/bold yellow]")
+    return HTMLResponse(f"""<!DOCTYPE html><html><head><meta charset="utf-8">
+    <title>Limpieza</title>
+    <style>body{{font-family:sans-serif;padding:40px;text-align:center}} h1{{color:#1a1a2e}}</style></head>
+    <body><h1>🧹 Limpieza completada</h1>
+    <p>Conversaciones de PostgreSQL borradas.</p>
+    <p>Caché en memoria reiniciado. Ya puedes empezar desde cero.</p>
+    <br><a href="/admin/conversaciones?password={password}">Ver conversaciones</a>
+    </body></html>""")
+
 
 if __name__ == "__main__":
     import uvicorn
