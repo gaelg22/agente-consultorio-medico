@@ -355,8 +355,8 @@ async def procesar_mensaje(phone: str, mensaje: str) -> str:
     if primer_mensaje:
         instruccion_saludo = (
             "PRIMER CONTACTO: Este es el primer mensaje del paciente.\n"
-            "Preséntate súper breve en una sola frase.\n"
-            "Ejemplo: 'Hola, buen día. Soy del equipo del consultorio del Dr. Alejandro Martínez. ¿En qué te puedo ayudar hoy?'\n"
+            "Preséntate súper breve diciendo que eres Mateo.\n"
+            "Ejemplo: 'Hola, buen día. Soy Mateo, del equipo del consultorio del Dr. Alejandro Martínez. ¿En qué te puedo ayudar hoy?'\n"
             "Usa un tono cálido y mexicano.\n\n"
         )
     else:
