@@ -65,6 +65,7 @@ KAPSO_API_KEY         = os.getenv("KAPSO_API_KEY", "")
 KAPSO_PHONE_NUMBER_ID = os.getenv("KAPSO_PHONE_NUMBER_ID", "")
 KAPSO_WEBHOOK_SECRET  = os.getenv("KAPSO_WEBHOOK_SECRET", "")
 KAPSO_API_BASE        = "https://api.kapso.ai/v1"
+ADMIN_PASSWORD        = os.getenv("ADMIN_PASSWORD", "")
 
 GITHUB_TOKEN       = os.getenv("GITHUB_TOKEN", "")
 GITHUB_VAULT_OWNER = os.getenv("GITHUB_VAULT_OWNER", "gaelg22")
