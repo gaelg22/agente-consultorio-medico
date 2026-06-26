@@ -354,7 +354,8 @@ async def procesar_mensaje(phone: str, mensaje: str) -> str:
                             f"\n⚠️ ALERTA DE HORARIO RECHAZADO:\n"
                             f"El paciente propuso cita el {fecha_t} a las {hora_t}.\n"
                             f"Este horario NO SE PUEDE por la siguiente razón: {val['razon']}.\n"
-                            f"Dile amablemente que a esa hora no se puede por esa razón y sugiérele de inmediato un ÚNICO horario libre alternativo cercano de la disponibilidad.\n\n"
+                            f"⚠️ REGLA DE RECHAZO ABSOLUTA: Está estrictamente PROHIBIDO decir frases de aceptación o confirmación (ej. 'Perfecto, deja te agendo a esa hora', 'Listo', 'Con gusto'). Debes ir DIRECTAMENTE a decirle de manera muy amable y educada que ese horario no está disponible y sugerirle un ÚNICO horario libre alternativo cercano.\n"
+                            f"Ejemplo de respuesta correcta: 'Disculpa, ese horario ya está ocupado. ¿Te quedaría bien mañana a las 10:00 am?'\n\n"
                         )
                     else:
                         # Si es válido pero falta el motivo, obligamos a preguntar motivo antes de confirmar
