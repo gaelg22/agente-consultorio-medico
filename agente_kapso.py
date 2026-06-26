@@ -36,6 +36,23 @@ from admin       import router as admin_router
 load_dotenv()
 console = Console()
 
+# ── Buffer de logs en memoria para diagnóstico ──
+LOGS_BUFFER = []
+_original_print = console.print
+
+def custom_print(*args, **kwargs):
+    import re as _re
+    import datetime
+    msg = " ".join(str(arg) for arg in args)
+    clean_msg = _re.sub(r"\[/?.*?\]", "", msg)
+    timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    LOGS_BUFFER.append(f"[{timestamp}] {clean_msg}")
+    if len(LOGS_BUFFER) > 250:
+        LOGS_BUFFER.pop(0)
+    _original_print(*args, **kwargs)
+
+console.print = custom_print
+
 # ══════════════════════════════════════════════════════════════════
 #  Configuración
 # ══════════════════════════════════════════════════════════════════
@@ -623,6 +640,32 @@ async def admin_limpiar(password: str = ""):
     <p>Caché en memoria reiniciado. Ya puedes empezar desde cero.</p>
     <br><a href="/admin/conversaciones?password={password}">Ver conversaciones</a>
     </body></html>""")
+
+
+@app.get("/admin/logs")
+async def admin_logs(password: str = ""):
+    if password != ADMIN_PASSWORD:
+        return HTMLResponse("<h2>❌ Contraseña incorrecta</h2>", status_code=403)
+    filas = "\n".join(f'<div style="margin-bottom:6px;border-bottom:1px solid #252525;padding-bottom:6px">{log}</div>' for log in reversed(LOGS_BUFFER))
+    html = f"""<!DOCTYPE html><html><head><meta charset="utf-8">
+    <title>Logs de la Aplicación</title>
+    <style>
+        body {{ font-family: monospace; background: #0c0c0c; color: #00ff66; padding: 25px; font-size:13px; line-height:1.5 }}
+        h1 {{ color: #ffffff; border-bottom: 2px solid #00ff66; padding-bottom: 10px; margin-bottom: 20px; }}
+        a {{ color: #00ffff; text-decoration: none; font-weight: bold; border: 1px solid #00ffff; padding: 5px 10px; border-radius: 4px; }}
+        a:hover {{ background: #00ffff; color: #000; }}
+    </style></head>
+    <body>
+        <h1>📋 Logs del Servidor (Últimos 250)</h1>
+        <div style="margin-bottom:20px">
+            <a href="/admin/logs?password={password}">🔄 Actualizar</a>
+            <a href="/admin/conversaciones?password={password}" style="margin-left:10px;color:#ff9900;border-color:#ff9900">💬 Conversaciones</a>
+        </div>
+        <div style="background:#151515;border:1px solid #333;padding:15px;border-radius:6px;max-height:80vh;overflow-y:auto">
+            {filas or 'Sin logs aún'}
+        </div>
+    </body></html>"""
+    return HTMLResponse(html)
 
 
 if __name__ == "__main__":
