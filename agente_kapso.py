@@ -416,15 +416,18 @@ async def webhook_recibir(request: Request):
     if not msg:
         return JSONResponse(content={"status": "no message field"})
 
-    phone    = str(msg.get("from", "")).strip()
-    kapso    = msg.get("kapso", {})
-    msg_type = kapso.get("type", "")
+    phone = str(msg.get("from", "")).strip()
+
+    # type y text están en message, NO dentro de kapso
+    msg_type  = msg.get("type", "") or msg.get("kapso", {}).get("type", "")
+    kapso     = msg.get("kapso", {})
+    texto_obj = msg.get("text") or kapso.get("text") or {}
 
     if msg_type != "text":
+        console.print(f"[yellow]Tipo ignorado: {msg_type!r}[/yellow]")
         return JSONResponse(content={"status": f"tipo ignorado: {msg_type}"})
 
-    texto_obj = kapso.get("text") or {}
-    mensaje   = (
+    mensaje = (
         texto_obj.get("body")
         or kapso.get("content")
         or ""
