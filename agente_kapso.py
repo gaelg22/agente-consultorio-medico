@@ -226,12 +226,15 @@ async def enviar_whatsapp(to_phone: str, texto: str) -> bool:
         "Content-Type":  "application/json",
     }
     payload = {"to": to_phone, "type": "text", "text": {"body": texto}}
+    console.print(f"[blue]📤 Enviando a Kapso → {url}[/blue]")
+    console.print(f"[dim]Payload: {json.dumps(payload)[:200]}[/dim]")
     try:
         async with httpx.AsyncClient(timeout=15) as client:
             resp = await client.post(url, headers=headers, json=payload)
+            console.print(f"[{'green' if resp.status_code in (200,201) else 'red'}]Kapso API → {resp.status_code}: {resp.text[:300]}[/{'green' if resp.status_code in (200,201) else 'red'}]")
             return resp.status_code in (200, 201)
     except Exception as e:
-        console.print(f"[red]Error enviando WhatsApp: {e}[/red]")
+        console.print(f"[red]❌ Error enviando WhatsApp: {e}[/red]")
         return False
 
 
