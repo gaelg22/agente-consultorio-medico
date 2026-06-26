@@ -128,10 +128,18 @@ async def horas_disponibles(fecha: str) -> list[str]:
         except (ValueError, KeyError):
             pass
 
+    # Minutos actuales (para filtrar slots pasados si es hoy)
+    from datetime import datetime as dt
+    es_hoy = (dia_dt == date.today())
+    ahora_min = dt.now().hour * 60 + dt.now().minute if es_hoy else 0
+
     libres = []
     for slot in range(rango["inicio"], rango["fin"], 60):
         if slot + 60 > rango["fin"]:
             break
+        # Omitir slots que ya pasaron hoy (con 30 min de margen mínimo)
+        if es_hoy and slot <= ahora_min + 30:
+            continue
         if all(abs(slot - ocp) >= 60 for ocp in ocupados):
             libres.append(f"{slot // 60:02d}:{slot % 60:02d}")
     return libres[:8]
