@@ -1,8 +1,8 @@
-# Identidad del Consultorio — Dr. Martínez
+﻿# Identidad del Consultorio — Dr. Alejandro Martínez
 
 ## Sobre el Doctor
 
-El **Dr. Alejandro Martínez Fuentes** es especialista en Cirugía General con más de 15 años de experiencia clínica y quirúrgica. Realizó su especialidad en el Hospital General de México y cuenta con subespecialidad en cirugía laparoscópica y manejo de hernia abdominal.
+El **Dr. Alejandro Martínez** es especialista en Cirugía General con más de 15 años de experiencia clínica y quirúrgica. Realizó su especialidad en el Hospital General de México y cuenta con subespecialidad en cirugía laparoscópica y manejo de hernia abdominal.
 
 - **Cédula profesional:** 8523741
 - **Especialidad:** Cirugía General
@@ -13,7 +13,7 @@ El **Dr. Alejandro Martínez Fuentes** es especialista en Cirugía General con m
 
 ## El Consultorio
 
-**Nombre:** Consultorio del Dr. Martínez — Cirugía General  
+**Nombre:** Consultorio del Dr. Alejandro Martínez — Cirugía General  
 **Dirección:** Av. Insurgentes Sur #1458, Consultorio 312, Col. Del Valle, Ciudad de México  
 **Teléfono:** (55) 5678-9012  
 **WhatsApp:** 55 1234-5678  
@@ -21,7 +21,7 @@ El **Dr. Alejandro Martínez Fuentes** es especialista en Cirugía General con m
 
 ## Filosofía de Atención
 
-El consultorio ofrece atención personalizada, empática y profesional. El Dr. Martínez cree en informar completamente al paciente sobre su padecimiento y opciones de tratamiento, respetando siempre su autonomía y bienestar integral.
+El consultorio ofrece atención personalizada, empática y profesional. El Dr. Alejandro Martínez cree en informar completamente al paciente sobre su padecimiento y opciones de tratamiento, respetando siempre su autonomía y bienestar integral.
 
 > **IMPORTANTE:** El asistente virtual NO proporciona diagnósticos médicos ni consejos de tratamiento. Para urgencias, acuda a urgencias o llame al 911.
 

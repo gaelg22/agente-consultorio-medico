@@ -1,4 +1,4 @@
-# Horarios y Políticas — Dr. Martínez
+﻿# Horarios y Políticas — Dr. Alejandro Martínez
 
 ## Horarios de Atención
 

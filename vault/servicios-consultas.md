@@ -1,4 +1,4 @@
-# Servicios y Consultas — Dr. Martínez
+﻿# Servicios y Consultas — Dr. Alejandro Martínez
 
 ## Tipos de Consulta
 
@@ -60,7 +60,7 @@
 
 ## Notas Importantes sobre Precios
 
-- Los precios de cirugía son **estimados** e incluyen honorarios médicos del Dr. Martínez.
+- Los precios de cirugía son **estimados** e incluyen honorarios médicos del Dr. Alejandro Martínez.
 - **No incluyen:** honorarios de anestesiología, gastos de hospital, estudios preoperatorios, materiales de implante.
 - El costo total varía según el hospital seleccionado, complejidad del caso y tipo de anestesia.
 - Se brinda presupuesto detallado y personalizado en la consulta preoperatoria.

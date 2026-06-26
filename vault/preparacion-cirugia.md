@@ -1,8 +1,8 @@
-# Preparación para Cirugía — Dr. Martínez
+﻿# Preparación para Cirugía — Dr. Alejandro Martínez
 
 ## ¿Cómo Prepararme para una Cirugía?
 
-> ⚠️ **Importante:** Las indicaciones específicas para TU cirugía las dará el Dr. Martínez en tu consulta preoperatoria. Esta información es general y orientativa.
+> ⚠️ **Importante:** Las indicaciones específicas para TU cirugía las dará el Dr. Alejandro Martínez en tu consulta preoperatoria. Esta información es general y orientativa.
 
 ---
 
@@ -68,7 +68,7 @@ El alta médica y las indicaciones postoperatorias se dan por escrito al salir d
 - **Herida quirúrgica:** no mojar hasta que el médico lo autorice; mantener limpia y seca
 - **Medicamentos:** tomar exactamente lo indicado (analgésicos, antibióticos si se recetan)
 - **Dieta:** iniciar con líquidos claros y progresar según tolerancia
-- **Signos de alarma** — Consultar al Dr. Martínez de inmediato si presenta:
+- **Signos de alarma** — Consultar al Dr. Alejandro Martínez de inmediato si presenta:
   - Fiebre mayor a 38.5°C
   - Sangrado o líquido abundante en la herida
   - Dolor severo que no cede con analgésicos
@@ -80,13 +80,13 @@ El alta médica y las indicaciones postoperatorias se dan por escrito al salir d
 ## Preguntas Frecuentes sobre Cirugía
 
 **¿Cuándo puedo regresar al trabajo?**  
-Depende del tipo de cirugía. Laparoscópica: generalmente 3–7 días para trabajo de oficina. Cirugía abierta: 2–4 semanas. El Dr. Martínez lo indicará según tu caso.
+Depende del tipo de cirugía. Laparoscópica: generalmente 3–7 días para trabajo de oficina. Cirugía abierta: 2–4 semanas. El Dr. Alejandro Martínez lo indicará según tu caso.
 
 **¿Necesito quien me cuide en casa?**  
 Sí, se recomienda tener un familiar o persona de apoyo al menos los primeros 2–3 días.
 
 **¿Cuándo se retiran los puntos o grapas?**  
-Habitualmente entre los 7 y 14 días. El Dr. Martínez programará la cita de revisión.
+Habitualmente entre los 7 y 14 días. El Dr. Alejandro Martínez programará la cita de revisión.
 
 **¿Puedo manejar después de la cirugía?**  
 No en los primeros días. El tiempo varía según el procedimiento y el uso de analgésicos. Consultar antes de manejar.

@@ -1,10 +1,10 @@
-# Información para la Consulta — Dr. Martínez
+﻿# Información para la Consulta — Dr. Alejandro Martínez
 
 ## ¿Qué Traer a la Consulta?
 
 ### Primera Consulta — Lista Esencial
 
-Traer **todo lo que puedas** de la siguiente lista para que el Dr. Martínez pueda darte la mejor atención:
+Traer **todo lo que puedas** de la siguiente lista para que el Dr. Alejandro Martínez pueda darte la mejor atención:
 
 #### Documentos de Identidad
 - [ ] Identificación oficial (INE, pasaporte)
@@ -62,7 +62,7 @@ No se atienden pacientes sin cita previa. Es indispensable agendar.
 Primera vez: 45–60 minutos. Seguimiento: 20–30 minutos.
 
 **¿Se atiende a niños?**  
-El Dr. Martínez atiende pacientes mayores de 16 años. Para niños menores, se recomienda un cirujano pediatra.
+El Dr. Alejandro Martínez atiende pacientes mayores de 16 años. Para niños menores, se recomienda un cirujano pediatra.
 
 **¿El doctor opera en qué hospitales?**  
 Trabaja en Hospital Ángeles Mocel, Médica Sur y Santa Fe según disponibilidad y tipo de procedimiento.
