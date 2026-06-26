@@ -605,9 +605,15 @@ async def admin_limpiar(password: str = ""):
     pool = get_pool()
     async with pool.acquire() as conn:
         await conn.execute("TRUNCATE TABLE conversaciones RESTART IDENTITY;")
+    
+    # Limpiar MongoDB (citas)
+    from db_mongo import get_db
+    db = get_db()
+    await db.delete_many({})
+
     historiales.clear()
     citas_pendientes.clear()
-    console.print("[bold yellow]🧹 Logs y caché limpiados[/bold yellow]")
+    console.print("[bold yellow]🧹 Logs, MongoDB y caché limpiados[/bold yellow]")
     return HTMLResponse(f"""<!DOCTYPE html><html><head><meta charset="utf-8">
     <title>Limpieza</title>
     <style>body{{font-family:sans-serif;padding:40px;text-align:center}} h1{{color:#1a1a2e}}</style></head>
