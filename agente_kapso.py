@@ -23,7 +23,7 @@ import anthropic
 import httpx
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, HTMLResponse
 from rich.console import Console
 
 from db_mongo    import init_mongo, guardar_cita, buscar_cita_existente, verificar_conflicto
@@ -465,6 +465,69 @@ async def health():
         "vault_chars":      len(vault_contenido),
         "dbs":              ["mongodb", "postgresql"],
     }
+
+
+@app.get("/admin/citas")
+async def admin_citas(password: str = ""):
+    if password != ADMIN_PASSWORD:
+        return HTMLResponse("<h2>❌ Contraseña incorrecta. Usa ?password=TU_PASSWORD</h2>", status_code=403)
+    citas = await db_mongo["citas"].find().sort("fecha", 1).to_list(200)
+    filas = ""
+    for c in citas:
+        filas += f"""<tr>
+            <td>{c.get('nombre','')}</td>
+            <td>{c.get('telefono','')}</td>
+            <td>{c.get('fecha','')}</td>
+            <td>{c.get('hora','')}</td>
+            <td>{c.get('motivo','')}</td>
+            <td>{c.get('tipo','')}</td>
+            <td>{str(c.get('created_at',''))[:16]}</td>
+        </tr>"""
+    html = f"""<!DOCTYPE html><html><head><meta charset="utf-8">
+    <title>Citas — Consultorio Dr. Martínez</title>
+    <style>body{{font-family:sans-serif;padding:20px}} table{{border-collapse:collapse;width:100%}}
+    th,td{{border:1px solid #ddd;padding:8px;text-align:left}} th{{background:#1a1a2e;color:white}}
+    tr:nth-child(even){{background:#f9f9f9}} h1{{color:#1a1a2e}}</style></head>
+    <body><h1>📅 Citas Agendadas ({len(citas)})</h1>
+    <table><tr><th>Nombre</th><th>Teléfono</th><th>Fecha</th><th>Hora</th><th>Motivo</th><th>Tipo</th><th>Registrada</th></tr>
+    {filas or '<tr><td colspan=7>Sin citas aún</td></tr>'}
+    </table></body></html>"""
+    return HTMLResponse(html)
+
+
+@app.get("/admin/conversaciones")
+async def admin_conversaciones(password: str = "", phone: str = ""):
+    if password != ADMIN_PASSWORD:
+        return HTMLResponse("<h2>❌ Contraseña incorrecta. Usa ?password=TU_PASSWORD</h2>", status_code=403)
+    if not pg_pool:
+        return HTMLResponse("<h2>PostgreSQL no conectado</h2>")
+    async with pg_pool.acquire() as conn:
+        if phone:
+            rows = await conn.fetch(
+                "SELECT * FROM conversaciones WHERE phone=$1 ORDER BY timestamp DESC LIMIT 100", phone)
+        else:
+            rows = await conn.fetch(
+                "SELECT * FROM conversaciones ORDER BY timestamp DESC LIMIT 200")
+    filas = ""
+    for r in rows:
+        color = "#d4edda" if r["role"] == "assistant" else "#fff"
+        filas += f"""<tr style="background:{color}">
+            <td>{str(r['timestamp'])[:16]}</td>
+            <td>{r['phone']}</td>
+            <td><b>{r['role']}</b></td>
+            <td style="max-width:500px;word-wrap:break-word">{r['content'][:300]}</td>
+        </tr>"""
+    html = f"""<!DOCTYPE html><html><head><meta charset="utf-8">
+    <title>Conversaciones — Consultorio</title>
+    <style>body{{font-family:sans-serif;padding:20px}} table{{border-collapse:collapse;width:100%}}
+    th,td{{border:1px solid #ddd;padding:8px;text-align:left}} th{{background:#1a1a2e;color:white}}
+    h1{{color:#1a1a2e}}</style></head>
+    <body><h1>💬 Conversaciones ({len(rows)})</h1>
+    <p>Filtrar por teléfono: <a href="?password={password}&phone=524921112233">524921112233</a></p>
+    <table><tr><th>Fecha</th><th>Teléfono</th><th>Rol</th><th>Mensaje</th></tr>
+    {filas or '<tr><td colspan=4>Sin mensajes aún</td></tr>'}
+    </table></body></html>"""
+    return HTMLResponse(html)
 
 
 if __name__ == "__main__":
