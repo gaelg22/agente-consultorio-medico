@@ -8,6 +8,7 @@ Bases de datos:
   - vault/*.md     : personalidad y reglas del bot (lectura directa, sin PyTorch)
 """
 
+import asyncio
 import hashlib
 import hmac
 import json
@@ -28,6 +29,7 @@ from rich.console import Console
 
 from db_mongo    import init_mongo, guardar_cita, buscar_cita_existente, verificar_conflicto
 from db_mongo    import horas_disponibles, proximas_disponibilidades
+from db_mongo    import get_citas_para_recordatorio, marcar_recordatorio_enviado
 from db_postgres import init_postgres, log_mensaje
 from admin       import router as admin_router
 
@@ -64,8 +66,9 @@ ANTHROPIC_API_KEY     = os.getenv("ANTHROPIC_API_KEY", "")
 KAPSO_API_KEY         = os.getenv("KAPSO_API_KEY", "")
 KAPSO_PHONE_NUMBER_ID = os.getenv("KAPSO_PHONE_NUMBER_ID", "")
 KAPSO_WEBHOOK_SECRET  = os.getenv("KAPSO_WEBHOOK_SECRET", "")
-KAPSO_API_BASE        = "https://api.kapso.ai/v1"
-ADMIN_PASSWORD        = os.getenv("ADMIN_PASSWORD", "")
+KAPSO_API_BASE         = "https://api.kapso.ai/v1"
+ADMIN_PASSWORD         = os.getenv("ADMIN_PASSWORD", "")
+MINUTOS_RECORDATORIO  = int(os.getenv("MINUTOS_RECORDATORIO", "5"))  # cambiar a 1440 para 24h
 
 GITHUB_TOKEN       = os.getenv("GITHUB_TOKEN", "")
 GITHUB_VAULT_OWNER = os.getenv("GITHUB_VAULT_OWNER", "gaelg22")
@@ -134,6 +137,34 @@ def cargar_vault() -> str:
 #  Lifespan
 # ══════════════════════════════════════════════════════════════════
 
+async def loop_recordatorios():
+    """Tarea en segundo plano: envía recordatorio de WhatsApp antes de cada cita."""
+    console.print(f"[cyan]⏰ Loop de recordatorios iniciado ({MINUTOS_RECORDATORIO} min antes)[/cyan]")
+    while True:
+        try:
+            citas = await get_citas_para_recordatorio(MINUTOS_RECORDATORIO)
+            for c in citas:
+                telefono = c.get("telefono", "")
+                nombre   = c.get("nombre", "Paciente")
+                fecha    = c.get("fecha", "")
+                hora     = c.get("hora", "")
+                if not telefono:
+                    continue
+                msg = (
+                    f"Hola {nombre}, te recordamos que tienes cita con el Dr. Alejandro Martínez "
+                    f"hoy {fecha} a las {hora}. Si necesitas cancelar o cambiar avísanos con anticipación."
+                )
+                ok = await enviar_whatsapp(telefono, msg)
+                if ok:
+                    await marcar_recordatorio_enviado(c["_id"])
+                    console.print(f"[green]✅ Recordatorio enviado a {telefono} ({nombre})[/green]")
+                else:
+                    console.print(f"[red]❌ Error enviando recordatorio a {telefono}[/red]")
+        except Exception as e:
+            console.print(f"[red]Error en loop recordatorios: {e}[/red]")
+        await asyncio.sleep(60)  # revisar cada minuto
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global vault_contenido, cliente_ant
@@ -147,7 +178,11 @@ async def lifespan(app: FastAPI):
 
     cliente_ant = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
     console.print(f"[bold green]🚀 {AGENTE_NOMBRE} ({NEGOCIO_NOMBRE}) listo[/bold green]")
+
+    # Iniciar loop de recordatorios en segundo plano
+    task = asyncio.create_task(loop_recordatorios())
     yield
+    task.cancel()
 
 
 app = FastAPI(title=f"Agente — {NEGOCIO_NOMBRE}", lifespan=lifespan)
@@ -301,21 +336,17 @@ async def procesar_mensaje(phone: str, mensaje: str) -> str:
         "⚠️ FRASES PROHIBIDAS: 'Te entiendo', 'Entiendo perfectamente', 'Entiendo tu preocupación'.\n"
         "Usa: 'Qué bueno que nos contactas', 'Es válido que te preocupe', 'Eso suena incómodo'.\n\n"
 
-        "⚡ MODO AGENDAMIENTO DIRECTO:\n"
-        "Si el paciente pide cita → muestra horarios de inmediato.\n"
-        "NO preguntes síntomas cuando ya decidió venir.\n\n"
+        "MENSAJES CORTOS: Escribe como una persona real tecleando en WhatsApp.\n"
+        "Máximo 3 oraciones por mensaje. Una idea a la vez. Sin listas. Sin enumeraciones.\n"
+        "Si necesitas dar varios horarios, ponlos en una sola línea separados por comas.\n\n"
 
-        "FLUJO DE SÍNTOMAS (solo si reporta molestia sin pedir cita):\n"
-        "En UN mensaje: valida + pregunta si tiene tratamiento.\n"
-        "Si no mejora → recomienda cita Y muestra horarios en ESE MISMO mensaje.\n\n"
+        "Si el paciente pide cita → pregunta qué día le viene bien y muestra opciones de forma breve.\n"
+        "Cuando confirmes la cita, di en UNA frase: tu nombre, fecha, hora y que 'tu cita está registrada'.\n"
+        "NO des listas de recomendaciones, recordatorios ni instrucciones extras al confirmar.\n\n"
 
-        "TONO: Prosa natural sin listas ni viñetas. La frase 'tu cita está registrada' "
-        "debe aparecer siempre al confirmar, pero sin asteriscos.\n\n"
-
-        "REGLAS MÉDICAS:\n"
-        "1. NUNCA proporciones diagnósticos ni consejos de tratamiento.\n"
-        "2. El doctor atiende CUALQUIER motivo. NUNCA redirigir a otro especialista.\n"
-        "3. URGENCIAS: 'Acude a urgencias o llama al 911.'\n\n"
+        "Si el paciente reporta molestia sin pedir cita: valida en una oración y ofrece cita.\n"
+        "URGENCIAS: dile que vaya a urgencias o llame al 911.\n"
+        "NUNCA diagnósticos ni consejos de tratamiento. El doctor atiende cualquier motivo.\n\n"
 
         f"FECHA DE HOY: {hoy.isoformat()} ({dia_hoy}).\n"
         f"DISPONIBILIDAD PRÓXIMA:\n{disponibilidad}\n\n"

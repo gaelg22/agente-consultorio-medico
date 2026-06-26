@@ -170,3 +170,31 @@ async def get_citas_recientes(limit: int = 50) -> list[dict]:
         c["_id"] = str(c["_id"])
         citas.append(c)
     return citas
+
+
+async def get_citas_para_recordatorio(minutos_antes: int = 5) -> list[dict]:
+    """Citas que empiezan en 'minutos_antes' minutos y aún no tienen recordatorio enviado."""
+    from datetime import datetime
+    db  = get_db()
+    now = datetime.now()
+
+    citas = []
+    async for c in db.find({"estado": {"$ne": "cancelada"}, "recordatorio_enviado": {"$ne": True}}):
+        try:
+            fecha_hora_str = f"{c['fecha']} {c['hora']}"
+            cita_dt = datetime.strptime(fecha_hora_str, "%Y-%m-%d %H:%M")
+            diff_min = (cita_dt - now).total_seconds() / 60
+            if 0 <= diff_min <= minutos_antes:
+                c["_id"] = str(c["_id"])
+                citas.append(c)
+        except (ValueError, KeyError):
+            continue
+    return citas
+
+
+async def marcar_recordatorio_enviado(cita_id: str):
+    """Marca una cita como recordatorio enviado para no repetirlo."""
+    from bson import ObjectId
+    db = get_db()
+    await db.update_one({"_id": ObjectId(cita_id)}, {"$set": {"recordatorio_enviado": True}})
+
