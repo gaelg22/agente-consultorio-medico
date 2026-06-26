@@ -220,19 +220,28 @@ def calcular_dias_proximos() -> str:
 # ══════════════════════════════════════════════════════════════════
 
 async def enviar_whatsapp(to_phone: str, texto: str) -> bool:
-    url = f"{KAPSO_API_BASE}/whatsapp/phone-numbers/{KAPSO_PHONE_NUMBER_ID}/messages"
+    # Kapso Standalone API — https://app.kapso.ai/api/v1/whatsapp_messages
+    url = "https://app.kapso.ai/api/v1/whatsapp_messages"
     headers = {
-        "Authorization": f"Bearer {KAPSO_API_KEY}",
-        "Content-Type":  "application/json",
+        "X-API-Key":    KAPSO_API_KEY,
+        "Content-Type": "application/json",
     }
-    payload = {"to": to_phone, "type": "text", "text": {"body": texto}}
+    payload = {
+        "message": {
+            "phone_number": to_phone,
+            "type": "text",
+            "text": {"body": texto},
+        }
+    }
     console.print(f"[blue]📤 Enviando a Kapso → {url}[/blue]")
-    console.print(f"[dim]Payload: {json.dumps(payload)[:200]}[/dim]")
+    console.print(f"[dim]To: {to_phone} | Msg: {texto[:60]}...[/dim]")
     try:
         async with httpx.AsyncClient(timeout=15) as client:
             resp = await client.post(url, headers=headers, json=payload)
-            console.print(f"[{'green' if resp.status_code in (200,201) else 'red'}]Kapso API → {resp.status_code}: {resp.text[:300]}[/{'green' if resp.status_code in (200,201) else 'red'}]")
-            return resp.status_code in (200, 201)
+            ok = resp.status_code in (200, 201)
+            color = "green" if ok else "red"
+            console.print(f"[{color}]Kapso → {resp.status_code}: {resp.text[:300]}[/{color}]")
+            return ok
     except Exception as e:
         console.print(f"[red]❌ Error enviando WhatsApp: {e}[/red]")
         return False
