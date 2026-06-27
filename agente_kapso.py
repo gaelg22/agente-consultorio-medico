@@ -474,6 +474,12 @@ def verificar_firma_kapso(body: bytes, signature: str) -> bool:
     return True
 
 
+@app.get("/api/conocimiento")
+async def api_conocimiento():
+    """Endpoint centralizado para que otros agentes consulten la base de conocimiento cargada."""
+    return {"status": "success", "vault": vault_contenido}
+
+
 @app.get("/webhook")
 async def webhook_verify(request: Request):
     params    = dict(request.query_params)
