@@ -485,8 +485,27 @@ def verificar_firma_kapso(body: bytes, signature: str) -> bool:
 async def api_conocimiento(negocio: str = "medico"):
     """Endpoint centralizado para que otros agentes consulten la base de conocimiento cargada."""
     try:
+        import os
+        vault_exists = VAULT_PATH.exists()
+        sub_path = VAULT_PATH / negocio
+        sub_exists = sub_path.exists()
+        sub_is_dir = sub_path.is_dir() if sub_exists else False
+        subdirs = [d.name for d in VAULT_PATH.iterdir() if d.is_dir()] if vault_exists else []
+
         contenido = cargar_vault(negocio)
-        return {"status": "success", "negocio": negocio, "vault": contenido}
+        return {
+            "status": "success",
+            "negocio": negocio,
+            "vault": contenido,
+            "debug": {
+                "vault_path": str(VAULT_PATH.absolute()),
+                "vault_exists": vault_exists,
+                "sub_path": str(sub_path.absolute()),
+                "sub_exists": sub_exists,
+                "sub_is_dir": sub_is_dir,
+                "available_subdirs": subdirs
+            }
+        }
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
