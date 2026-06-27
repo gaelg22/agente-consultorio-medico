@@ -127,27 +127,34 @@ cliente_ant: anthropic.Anthropic | None = None
 #  Cargar vault de Obsidian
 # ══════════════════════════════════════════════════════════════════
 
-def cargar_vault() -> str:
-    """Lee todos los .md del vault y los concatena como contexto del bot."""
-    if not VAULT_PATH.exists():
-        console.print(f"[yellow]Carpeta vault no encontrada en {VAULT_PATH}[/yellow]")
+def cargar_vault(negocio: str = "medico") -> str:
+    """Lee todos los .md del vault y los concatena como contexto del bot.
+    Soporta subcarpetas por negocio (ej. vault/estetica/) para soportar múltiples agentes."""
+    path = VAULT_PATH
+    if negocio and negocio != "medico":
+        sub_path = VAULT_PATH / negocio
+        if sub_path.exists() and sub_path.is_dir():
+            path = sub_path
+
+    if not path.exists():
+        console.print(f"[yellow]Carpeta vault no encontrada en {path}[/yellow]")
         return ""
 
     partes = []
-    # Archivos principales
-    for archivo in sorted(VAULT_PATH.glob("*.md")):
+    # Archivos principales del negocio o de la raíz
+    for archivo in sorted(path.glob("*.md")):
         contenido = archivo.read_text(encoding="utf-8")
         partes.append(f"## {archivo.stem}\n{contenido}")
 
     # Correcciones aprendidas
-    correcciones_path = VAULT_PATH / "correcciones"
+    correcciones_path = path / "correcciones"
     if correcciones_path.exists():
         for archivo in sorted(correcciones_path.glob("*.md")):
             contenido = archivo.read_text(encoding="utf-8")
             partes.append(f"## corrección: {archivo.stem}\n{contenido}")
 
     resultado = "\n\n---\n\n".join(partes)
-    console.print(f"[green]✅ Vault cargado: {len(partes)} archivos ({len(resultado)} chars)[/green]")
+    console.print(f"[green]✅ Vault [{negocio}] cargado: {len(partes)} archivos ({len(resultado)} chars)[/green]")
     return resultado
 
 
@@ -475,9 +482,13 @@ def verificar_firma_kapso(body: bytes, signature: str) -> bool:
 
 
 @app.get("/api/conocimiento")
-async def api_conocimiento():
+async def api_conocimiento(negocio: str = "medico"):
     """Endpoint centralizado para que otros agentes consulten la base de conocimiento cargada."""
-    return {"status": "success", "vault": vault_contenido}
+    try:
+        contenido = cargar_vault(negocio)
+        return {"status": "success", "negocio": negocio, "vault": contenido}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
 
 
 @app.get("/webhook")
