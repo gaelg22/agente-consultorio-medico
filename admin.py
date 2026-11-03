@@ -7,6 +7,7 @@ correcciones automáticas en Obsidian (doctor-vault en GitHub).
 import base64
 import hashlib
 import os
+import secrets
 from datetime import date
 from pathlib import Path
 
@@ -32,7 +33,8 @@ GITHUB_VAULT_REPO  = os.getenv("GITHUB_VAULT_REPO", "doctor-vault")
 # ── Auth básica ────────────────────────────────────────────────────
 
 def verificar_admin(credentials: HTTPBasicCredentials = Depends(security)):
-    pwd_ok = credentials.password == ADMIN_PASSWORD
+    # sin ADMIN_PASSWORD configurado el panel queda cerrado
+    pwd_ok = bool(ADMIN_PASSWORD) and secrets.compare_digest(credentials.password, ADMIN_PASSWORD)
     if not pwd_ok:
         raise HTTPException(
             status_code=401,

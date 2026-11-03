@@ -581,7 +581,7 @@ async def health():
 
 @app.get("/admin/citas")
 async def admin_citas(password: str = ""):
-    if password != ADMIN_PASSWORD:
+    if not ADMIN_PASSWORD or password != ADMIN_PASSWORD:
         return HTMLResponse("<h2>❌ Contraseña incorrecta. Usa ?password=TU_PASSWORD</h2>", status_code=403)
     from db_mongo import get_citas_recientes
     citas = await get_citas_recientes(200)
@@ -610,7 +610,7 @@ async def admin_citas(password: str = ""):
 
 @app.get("/admin/conversaciones")
 async def admin_conversaciones(password: str = ""):
-    if password != ADMIN_PASSWORD:
+    if not ADMIN_PASSWORD or password != ADMIN_PASSWORD:
         return HTMLResponse("<h2>❌ Contraseña incorrecta. Usa ?password=TU_PASSWORD</h2>", status_code=403)
     from db_postgres import get_conversaciones
     rows = await get_conversaciones(200)
@@ -636,7 +636,7 @@ async def admin_conversaciones(password: str = ""):
 
 @app.get("/admin/limpiar")
 async def admin_limpiar(password: str = ""):
-    if password != ADMIN_PASSWORD:
+    if not ADMIN_PASSWORD or password != ADMIN_PASSWORD:
         return HTMLResponse("<h2>❌ Contraseña incorrecta</h2>", status_code=403)
     from db_postgres import get_pool
     pool = get_pool()
@@ -663,7 +663,7 @@ async def admin_limpiar(password: str = ""):
 
 @app.get("/admin/logs")
 async def admin_logs(password: str = ""):
-    if password != ADMIN_PASSWORD:
+    if not ADMIN_PASSWORD or password != ADMIN_PASSWORD:
         return HTMLResponse("<h2>❌ Contraseña incorrecta</h2>", status_code=403)
     filas = "\n".join(f'<div style="margin-bottom:6px;border-bottom:1px solid #252525;padding-bottom:6px">{log}</div>' for log in reversed(LOGS_BUFFER))
     html = f"""<!DOCTYPE html><html><head><meta charset="utf-8">
